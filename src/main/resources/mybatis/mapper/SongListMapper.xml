@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itcast.springboot.mapper.SongListMapper">
+    <!--增
+        useGeneratedKeys="true" keyProperty="uid"
+            添加完对象后将id属性封装到对象中
+    -->
+    <insert id="insertSongList" useGeneratedKeys="true" keyProperty="slid">
+        insert into songlist(song_link, song_name, song_type)
+        values(#{songLink}, #{songName}, #{songType})
+    </insert>
+
+    <!--根据id删除-->
+    <delete id="deleteSongList">
+        delete from songlist where slid = #{slid}
+    </delete>
+
+    <!--查-->
+    <!--通过id查询-->
+    <select id="getSongListById" resultType="com.itcast.springboot.bean.SongList">
+        select * from songlist where slid = #{slid}
+    </select>
+    <!--in查询，查询多首歌曲信息-->
+    <select id="getSongListsByIds" resultType="com.itcast.springboot.bean.SongList">
+        select * from songlist where slid in
+        <foreach collection="slids" item="item_slid" open="(" separator="," close=")">
+            #{item_slid}
+        </foreach>
+    </select>
+    <!--根据用户的听歌类型随机抽取出20首歌曲-->
+    <select id="getSongListsRand" resultType="com.itcast.springboot.bean.SongList">
+        select  *  from  songlist WHERE song_type in
+        <foreach collection="songTypes" item="item_songType" open="(" separator="," close=")">
+            #{item_songType}
+        </foreach>
+        order by rand() limit 2
+    </select>
+
+    <!--改-->
+    <update id="updateSongList">
+        update songlist set song_link=#{songLink}, song_name=#{songName}, song_type=#{songType}
+        where slid=#{slid}
+    </update>
+</mapper>

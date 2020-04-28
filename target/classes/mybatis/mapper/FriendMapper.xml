@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itcast.springboot.mapper.FriendMapper">
+    <!--增
+        useGeneratedKeys="true" keyProperty="uid"
+            添加完对象后将id属性封装到对象中
+    -->
+    <insert id="insertFriend" useGeneratedKeys="true" keyProperty="fid">
+        insert into friend(user_id,friendid)
+        values(#{userId}, #{friendid})
+    </insert>
+
+    <!--根据id删除-->
+    <delete id="deleteFriend">
+        delete from friend where fid = #{fid}
+    </delete>
+    <!--取消关注：通过用户id和好友id删除friend表对应信息-->
+    <delete id="deleteFriendByUidAndFid">
+        delete from friend where user_id = #{userId} and friendid = #{friendId}
+    </delete>
+
+    <!--查-->
+    <!--通过id查询-->
+    <select id="getFriendById" resultType="com.itcast.springboot.bean.Friend">
+        select * from friend where fid = #{fid}
+    </select>
+    <!--通过id查询对应好友的id和姓名-->
+    <select id="getFriendsAndNames" resultType="com.itcast.springboot.bean.Friend">
+        SELECT fid, user_id, username, friendid from friend LEFT JOIN `user`
+        ON `user`.uid = friend.friendid where user_id = #{uid}
+    </select>
+
+    <!--改-->
+    <update id="updateFriend">
+        update friend set user_id=#{userId}, friendid=#{friendid}
+        where fid=#{fid}
+    </update>
+</mapper>

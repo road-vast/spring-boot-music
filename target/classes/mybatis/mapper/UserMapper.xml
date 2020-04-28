@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itcast.springboot.mapper.UserMapper">
+    <!--增
+        useGeneratedKeys="true" keyProperty="uid"
+            添加完对象后将id属性封装到对象中
+    -->
+    <insert id="insertUser" useGeneratedKeys="true" keyProperty="uid">
+        insert into user(username, session_key, avatar_url, gender, country, province, city, lang)
+        values(#{username}, #{sessionKey}, #{avatarUrl}, #{gender}, #{country}, #{province}, #{city}, #{lang})
+    </insert>
+    <!--进行批量插入
+        foreach元素的属性主要有 item，index，collection，open，separator，close。
+            item集合中每一个元素进行迭代时的别名，
+            index表示在迭代过程中，每次迭代到的位置，
+            open该语句以什么开始，
+            separator在每次进行迭代之间以什么符号作为分隔符，
+            close以什么结束
+    -->
+    <insert id="insertUsers" useGeneratedKeys="true" keyProperty="uid" parameterType="com.itcast.springboot.bean.User">
+        insert into user(username, session_key, avatar_url, gender, country, province, city, lang) values
+        <foreach collection="list" item="user" index="index" separator=",">
+            (#{user.username}, #{user.sessionKey}, #{user.avatarUrl}, #{user.gender}, #{user.country},
+            #{user.province}, #{user.city}, #{user.lang})
+        </foreach>
+    </insert>
+
+    <!--根据id删除-->
+    <delete id="deleteUser">
+        delete from user where uid = #{uid}
+    </delete>
+
+    <!--查-->
+    <!--通过id查询-->
+    <select id="getUserById" resultType="com.itcast.springboot.bean.User">
+        select * from user where uid = #{id}
+    </select>
+
+    <!--查询所有-->
+    <select id="getUsers" resultType="com.itcast.springboot.bean.User">
+        select * from user
+    </select>
+
+    <!--查询user信息和user动态信息-->
+    <resultMap type="com.itcast.springboot.bean.User" id="myUser1">
+        <id column="uid" property="uid"/>
+        <result column="username" property="username"/>
+        <result column="session_key" property="sessionKey"/>
+        <result column="avatar_url" property="avatarUrl"/>
+        <result column="gender" property="gender"/>
+        <result column="country" property="country"/>
+        <result column="province" property="province"/>
+        <result column="city" property="city"/>
+        <result column="lang" property="lang"/>
+        <!--
+            Collection：定义关联集合类型的属性的封装规则
+            ofType：指定集合里面元素的类型
+         -->
+        <collection property="userDynas" ofType="com.itcast.springboot.bean.UserDyna">
+            <id column="udid" property="udid"/>
+            <result column="songlist_id" property="songlistId"/>
+            <result column="dyna_con" property="dynaCon"/>
+            <result column="user_id" property="userId"/>
+        </collection>
+    </resultMap>
+    <select id="getUserAndDynaById" resultMap="myUser1">
+ 		select u.uid uid, u.username username, u.session_key session_key, u.avatar_url avatar_url,
+ 		u.gender gender, u.country country,
+ 		u.province province, u.city city, u.lang lang,
+		ud.udid udid, ud.songlist_id songlist_id, ud.dyna_con dyna_con, ud.user_id user_id
+			from user u
+			LEFT JOIN userdyna ud
+			ON u.uid = ud.user_id
+			where u.uid = #{uid}
+ 	</select>
+
+    <!-- 查询用户和用户动态信息：分步查询 -->
+    <resultMap type="com.itcast.springboot.bean.User" id="myUser2">
+        <id column="uid" property="uid"/>
+        <result column="username" property="username"/>
+        <result column="session_key" property="sessionKey"/>
+        <result column="avatar_url" property="avatarUrl"/>
+        <result column="gender" property="gender"/>
+        <result column="country" property="country"/>
+        <result column="province" property="province"/>
+        <result column="city" property="city"/>
+        <result column="lang" property="lang"/>
+        <collection property="userDynas" select="com.itcast.springboot.mapper.UserDynaMapper.getUserDynaByUserId" column="{uid=uid}" fetchType="lazy"></collection>
+    </resultMap>
+    <select id="getUserAndDynaByIdStep" resultMap="myUser2">
+ 		select * from user where uid = #{uid}
+ 	</select>
+
+    <!--使用分页查询查询所有-->
+    <select id="getUsersPage" resultType="com.itcast.springboot.bean.User">
+        select * from user
+    </select>
+
+    <!--查询user信息和对应的friend列表信息-->
+    <resultMap type="com.itcast.springboot.bean.User" id="myUser3">
+        <id column="uid" property="uid"/>
+        <result column="username" property="username"/>
+        <result column="session_key" property="sessionKey"/>
+        <result column="avatar_url" property="avatarUrl"/>
+        <result column="gender" property="gender"/>
+        <result column="country" property="country"/>
+        <result column="province" property="province"/>
+        <result column="city" property="city"/>
+        <result column="lang" property="lang"/>
+        <!--
+            Collection：定义关联集合类型的属性的封装规则
+            ofType：指定集合里面元素的类型
+         -->
+        <collection property="friends" ofType="com.itcast.springboot.bean.Friend">
+            <id column="fid" property="fid"/>
+            <result column="user_id" property="userId"/>
+            <result column="friendid" property="friendid"/>
+        </collection>
+    </resultMap>
+    <select id="getUserAndFriendsById" resultMap="myUser3">
+ 		select u.uid uid, u.username username, u.session_key session_key, u.avatar_url avatar_url,
+ 		u.gender gender, u.country country,
+ 		u.province province, u.city city, u.lang lang,
+		f.fid fid, f.user_id user_id, f.friendid friendid
+			from user u
+			LEFT JOIN friend f
+			ON u.uid = f.user_id
+			where u.uid = #{uid}
+ 	</select>
+    <!--in查询：多个id获取多个用户信息-->
+    <select id="getUsersByIds" resultType="com.itcast.springboot.bean.User">
+        select * from user where uid in
+        <foreach collection="uids" item="item_uid" open="(" separator="," close=")">
+            #{item_uid}
+        </foreach>
+    </select>
+
+    <!--改-->
+    <update id="updateUser">
+        update user set username=#{username}, session_key=#{sessionKey}, avatar_url=#{avatarUrl},
+        gender=#{gender}, country=#{country}, province=#{province}, city=#{city}, lang=#{lang} where uid=#{uid}
+    </update>
+</mapper>

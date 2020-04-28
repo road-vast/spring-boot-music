@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itcast.springboot.mapper.UserDynaMapper">
+    <!--增
+        useGeneratedKeys="true" keyProperty="uid"
+            添加完对象后将id属性封装到对象中
+    -->
+    <insert id="insertUserDyna" useGeneratedKeys="true" keyProperty="udid">
+        insert into userdyna(songlist_id, dyna_con, user_id, uddate)
+        values(#{songlistId}, #{dynaCon}, #{userId}, #{uddate})
+    </insert>
+
+    <!--根据id删除-->
+    <delete id="deleteUserDyna">
+        delete from userdyna where udid = #{udid}
+    </delete>
+
+    <!--查-->
+    <!--通过id查询-->
+    <select id="getUserDynaById" resultType="com.itcast.springboot.bean.UserDyna">
+        select * from userdyna where udid = #{udid}
+    </select>
+    <!--user中使用分步查询，先查user，再根据需要查询dyna-->
+    <select id="getUserDynaByUserId" resultType="com.itcast.springboot.bean.UserDyna">
+        select * from userdyna where user_id = #{uid}
+    </select>
+
+    <resultMap type="com.itcast.springboot.bean.UserDyna" id="myUserDyna1">
+        <id column="udid" property="udid"/>
+        <result column="songlist_id" property="songlistId"/>
+        <result column="dyna_con" property="dynaCon"/>
+        <result column="user_id" property="userId"/>
+        <result column="uddate" property="uddate"/>
+
+        <!--
+            Collection：定义关联集合类型的属性的封装规则
+            ofType：指定集合里面元素的类型
+         -->
+        <collection property="songLists" ofType="com.itcast.springboot.bean.SongList">
+            <id column="slid" property="slid"/>
+            <result column="song_link" property="songLink"/>
+            <result column="song_name" property="songName"/>
+            <result column="song_type" property="songType"/>
+        </collection>
+    </resultMap>
+    <!--in查询：查询好友动态详细信息-->
+    <select id="getUserDynasByIn" resultMap="myUserDyna1">
+        select udid, songlist_id, dyna_con, user_id, uddate, slid, song_link, song_name, song_type
+        from userdyna
+        LEFT JOIN songlist on userdyna.songlist_id = songlist.slid where user_id in
+        <foreach collection="userIds" item="item_userId" separator="," open="(" close=")">
+            #{item_userId}
+        </foreach>
+    </select>
+
+    <!--通过日期查询出所有的动态信息-->
+    <select id="getUserDynasByDate" resultType="com.itcast.springboot.bean.UserDyna">
+        select udid, songlist_id, dyna_con, user_id, username, uddate from userdyna
+        LEFT JOIN `user` ON `user`.uid = userdyna.user_id
+        where DATE_FORMAT(uddate,'%Y-%m-%d')=
+        DATE_FORMAT(#{uddate},'%Y-%m-%d')
+    </select>
+
+    <!--改-->
+    <update id="updateUserDyna">
+        update userdyna set songlist_id=#{songlistId}, dyna_con=#{dynaCon}, user_id=#{userId}, update = #{update}
+        where udid=#{udid}
+    </update>
+</mapper>

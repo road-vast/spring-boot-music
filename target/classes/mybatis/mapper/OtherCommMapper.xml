@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itcast.springboot.mapper.OtherCommMapper">
+    <!--增
+        useGeneratedKeys="true" keyProperty="uid"
+            添加完对象后将id属性封装到对象中
+    -->
+    <insert id="insertOtherComm" useGeneratedKeys="true" keyProperty="ocid">
+        insert into othercomm(comm_con, userdyna_id, oc_user_id, ocdate)
+        values(#{commCon}, #{userdynaId}, #{ocUserId}, #{ocdate})
+    </insert>
+
+    <!--根据id删除-->
+    <delete id="deleteOtherComm">
+        delete from othercomm where ocid = #{ocid}
+    </delete>
+
+    <!--查-->
+    <!--通过id查询-->
+    <select id="getOtherCommById" resultType="com.itcast.springboot.bean.OtherComm">
+        select * from othercomm where ocid = #{ocid}
+    </select>
+    <!--多个count查询：多个用户动态id查询评论人数-->
+    <select id="getOtherCommNumsByUserDynaIds" resultType="Integer">
+        SELECT COUNT(userdyna_id) from userdyna LEFT JOIN othercomm ON udid = userdyna_id
+        GROUP BY udid HAVING udid in
+        <!--
+        collection：指定要遍历的集合
+            list类型的参数会特殊处理封装在map中，map的key就叫list
+        item：当前遍历出的元素赋值给指定的变量
+        separator：指定每个元素之间的分隔符
+        open:开始字符
+        close:结束字符
+        index:索引。遍历list的时候是索引
+        ORDER BY FIELD:按指定的顺序输出
+        -->
+        <foreach collection="userdynasId" item="item_userdynaId" separator="," open="(" close=")">
+            #{item_userdynaId}
+        </foreach>
+        ORDER BY FIELD(udid,
+        <foreach collection="userdynasId" item="item_userdynaId" separator="," close=")">
+            #{item_userdynaId}
+        </foreach>
+    </select>
+    <!--级联查询：多个用户动态id查询评论信息和评论用户信息-->
+    <resultMap type="com.itcast.springboot.bean.OtherComm" id="myOtherComm1">
+        <id column="ocid" property="ocid"/>
+        <result column="comm_con" property="commCon"/>
+        <result column="userdyna_id" property="userdynaId"/>
+        <result column="oc_user_id" property="ocUserId"/>
+        <result column="ocdate" property="ocdate"/>
+        <!--
+            Collection：定义关联集合类型的属性的封装规则
+            ofType：指定集合里面元素的类型
+         -->
+        <collection property="users" ofType="com.itcast.springboot.bean.User">
+            <id column="uid" property="uid"/>
+            <result column="username" property="username"/>
+            <result column="session_key" property="sessionKey"/>
+            <result column="avatar_url" property="avatarUrl"/>
+            <result column="gender" property="gender"/>
+            <result column="country" property="country"/>
+            <result column="province" property="province"/>
+            <result column="city" property="city"/>
+            <result column="lang" property="lang"/>
+        </collection>
+    </resultMap>
+    <select id="getOtherCommsAndUsersByUserDynasId" resultMap="myOtherComm1">
+        select o.ocid ocid, o.comm_con comm_con, o.oc_user_id oc_user_id, o.ocdate ocdate,
+        u.uid uid, u.username username, u.session_key session_key, u.avatar_url avatar_url,
+        u.gender gender, u.country country,
+        u.province province, u.city city, u.lang lang
+        from othercomm o
+        LEFT JOIN user u
+        ON u.uid = o.oc_user_id
+        where o.userdyna_id in
+        <foreach collection="userdynasId" item="item_userdynaId" separator="," open="(" close=")">
+            #{item_userdynaId}
+        </foreach>
+    </select>
+
+    <!--多个用户动态id获取评论详细信息-->
+    <select id="getOtherCommsAndNamesByIds" resultType="com.itcast.springboot.bean.OtherComm">
+        select ocid, comm_con, userdyna_id,
+        user_id, (SELECT username from `user` u WHERE u.uid = o.user_id) username,
+        oc_user_id, (SELECT username from `user` u WHERE u.uid = o.user_id) oc_username,
+        ocdate
+        from othercomm o where userdyna_id in
+        <foreach collection="userdynaIds" item="item_userdynaId" separator="," open="(" close=")">
+            #{item_userdynaId}
+        </foreach>
+    </select>
+
+    <!--级联查询：查询用户评论对应的回复详细信息-->
+    <resultMap type="com.itcast.springboot.bean.OtherComm" id="myOtherComm2">
+        <id column="ocid" property="ocid"/>
+        <result column="comm_con" property="commCon"/>
+        <result column="userdyna_id" property="userdynaId"/>
+
+        <result column="oc_user_id" property="ocUserId"/>
+        <result column="ocdate" property="ocdate"/>
+        <!--
+            Collection：定义关联集合类型的属性的封装规则
+            ofType：指定集合里面元素的类型
+         -->
+        <collection property="replyComms" ofType="com.itcast.springboot.bean.ReplyComm">
+            <id column="rcid" property="rcid"/>
+            <result column="rc_user_id" property="rcUserId"/>
+            <result column="rc_user_name" property="rcUserName"></result>
+            <result column="othercomm_id" property="othercommId"/>
+            <result column="user_id" property="userId"/>
+            <result column="user_name" property="userName"></result>
+            <result column="rc_con" property="rcCon"/>
+            <result column="rc_date" property="rcDate"/>
+        </collection>
+    </resultMap>
+    <select id="getOtherCommsAndReplyCommsByUserDynasIds" resultMap="myOtherComm2">
+        select o.ocid ocid, o.comm_con comm_con, o.userdyna_id userdyna_id, o.oc_user_id oc_user_id, o.ocdate ocdate,
+        r.rcid rcid, r.rc_user_id, r.othercomm_id othercomm_id,
+        (SELECT username from `user` u WHERE u.uid = r.rc_user_id) rc_user_name,
+        r.user_id user_id,
+        (SELECT username from `user` u WHERE u.uid = r.user_id) user_name,
+        r.rc_con rc_con, r.rc_date
+        from othercomm o
+        LEFT JOIN replycomm r
+        ON o.ocid = r.othercomm_id
+        where o.userdyna_id in
+        <foreach collection="userdynaIds" item="item_userdynaId" separator="," open="(" close=")">
+            #{item_userdynaId}
+        </foreach>
+    </select>
+
+    <!--改-->
+    <update id="updateOtherComm">
+        update othercomm set comm_con=#{commCon}, userdyna_id=#{userdynaId}, oc_user_id=#{ocUserId}, ocdate=#{ocdate}
+        where ocid=#{ocid}
+    </update>
+</mapper>

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itcast.springboot.mapper.ForwardMapper">
+    <!--增
+        useGeneratedKeys="true" keyProperty="uid"
+            添加完对象后将id属性封装到对象中
+    -->
+    <insert id="insertForward" useGeneratedKeys="true" keyProperty="fwid">
+        insert into forward(userdyna_id, user_id, fwdate)
+        values(#{userdynaId}, #{userId}, #{fwdate})
+    </insert>
+
+    <!--根据id删除-->
+    <delete id="deleteForward">
+        delete from forward where fwid = #{fwid}
+    </delete>
+
+    <!--查-->
+    <!--通过id查询-->
+    <select id="getForward" resultType="com.itcast.springboot.bean.Forward">
+        select * from forward where fwid = #{fwid}
+    </select>
+    <!--count查询：通过用户动态id查询被转发的数量-->
+    <select id="getCountByUserDynaId" resultType="Integer">
+        select count(*) from forward where userdyna_id = #{userdynaId}
+    </select>
+    <!--多个count查询：多个用户动态id查询被转发的次数-->
+    <select id="getCountsByUserDynasId" resultType="Integer">
+        SELECT COUNT(userdyna_id) from userdyna LEFT JOIN forward ON udid = userdyna_id
+        GROUP BY udid HAVING udid in
+        <!--
+        collection：指定要遍历的集合
+            list类型的参数会特殊处理封装在map中，map的key就叫list
+        item：当前遍历出的元素赋值给指定的变量
+        separator：指定每个元素之间的分隔符
+        open:开始字符
+        close:结束字符
+        index:索引。遍历list的时候是索引
+        ORDER BY FIELD:按指定的顺序输出
+        -->
+        <foreach collection="userdynasId" item="item_userdynaId" separator="," open="(" close=")">
+            #{item_userdynaId}
+        </foreach>
+        ORDER BY FIELD(udid,
+        <foreach collection="userdynasId" item="item_userdynaId" separator="," close=")">
+            #{item_userdynaId}
+        </foreach>
+    </select>
+    <!--级联查询：多个用户动态id查询对应转发信息和对应用户信息-->
+    <resultMap type="com.itcast.springboot.bean.Forward" id="myForward1">
+        <id column="fwid" property="fwid"/>
+        <result column="userdyna_id" property="userdynaId"/>
+        <result column="user_id" property="userId"/>
+        <result column="fwdate" property="fwdate"/>
+        <!--
+            Collection：定义关联集合类型的属性的封装规则
+            ofType：指定集合里面元素的类型
+         -->
+        <collection property="users" ofType="com.itcast.springboot.bean.User">
+            <id column="uid" property="uid"/>
+            <result column="username" property="username"/>
+            <result column="session_key" property="sessionKey"/>
+            <result column="avatar_url" property="avatarUrl"/>
+            <result column="gender" property="gender"/>
+            <result column="country" property="country"/>
+            <result column="province" property="province"/>
+            <result column="city" property="city"/>
+            <result column="lang" property="lang"/>
+        </collection>
+    </resultMap>
+    <select id="getForwardsAndUsersById" resultMap="myForward1">
+ 		select f.fwid fwid, f.user_id user_id, f.fwdate fwdate, f.userdyna_id, userdyna_id,
+ 		u.uid uid, u.username username, u.session_key session_key, u.avatar_url avatar_url,
+ 		u.gender gender, u.country country,
+ 		u.province province, u.city city, u.lang lang
+			from forward f
+			LEFT JOIN user u
+			ON u.uid = f.user_id
+			where f.userdyna_id in
+        <foreach collection="userdynaIds" item="item_userdynaId" separator="," open="(" close=")">
+            #{item_userdynaId}
+        </foreach>
+ 	</select>
+
+    <!--通过用户动态id获取转发信息-->
+    <select id="getForwardsById" resultType="com.itcast.springboot.bean.Forward">
+        select * from forward where userdyna_id in
+        <foreach collection="userdynaIds" item="item_userdynaId" separator="," open="(" close=")">
+            #{item_userdynaId}
+        </foreach>
+    </select>
+    <!--查询转发信息id、用户动态id、转发人名字、转发日期-->
+    <select id="getForwardsAndNamesByIds" resultType="com.itcast.springboot.bean.Forward">
+        SELECT fwid, userdyna_id, user_id, username, fwdate from forward  LEFT JOIN
+        `user` ON `user`.uid = forward.user_id where userdyna_id IN
+        <foreach collection="userdynaIds" item="item_userdynaId" separator="," open="(" close=")">
+            #{item_userdynaId}
+        </foreach>
+    </select>
+
+    <!--改-->
+    <update id="updateForward">
+        update forward set userdyna_id=#{userdynaId}, user_id=#{userId}, fwdate=#{fwdate}
+        where fwid=#{fwid}
+    </update>
+</mapper>

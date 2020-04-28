@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.itcast.springboot.mapper.MessageMapper">
+    <!--增
+        useGeneratedKeys="true" keyProperty="uid"
+            添加完对象后将id属性封装到对象中
+    -->
+    <insert id="insertMessage" useGeneratedKeys="true" keyProperty="mid">
+        insert into message(send_user_id, rece_user_id, m_conn, mdate)
+        values(#{sendUserId}, #{receUserId}, #{mConn}, #{mdate})
+    </insert>
+
+    <!--根据id删除-->
+    <delete id="deleteMessage">
+        delete from message where mid = #{mid}
+    </delete>
+
+    <!--查-->
+    <!--通过id查询-->
+    <select id="getMessageById" resultType="com.itcast.springboot.bean.Message">
+        select * from message where mid = #{mid}
+    </select>
+    <!--根据传进来的用户id和好友id查询消息的互传详细信息-->
+    <select id="getMessages" resultType="com.itcast.springboot.bean.Message">
+        SELECT mid, send_user_id, (SELECT username from `user` u WHERE u.uid = m.send_user_id) send_username,
+        rece_user_id, (SELECT username from `user` u WHERE u.uid = m.rece_user_id) rece_username,
+        m_conn, mdate FROM message m WHERE
+        (send_user_id = #{uid} AND rece_user_id = #{friendId}) or (send_user_id = #{friendId} AND rece_user_id = #{uid})
+        ORDER BY mdate
+    </select>
+
+    <!--改-->
+    <update id="updateMessage">
+        update message set send_user_id=#{sendUserId}, rece_user_id=#{receUserId},
+        m_conn=#{mConn}, mdate=#{mdate}
+        where mid=#{mid}
+    </update>
+</mapper>
